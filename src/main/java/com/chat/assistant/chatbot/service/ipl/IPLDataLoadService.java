@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,6 +29,7 @@ import com.chat.assistant.chatbot.service.SectorService;
 import com.chat.assistant.chatbot.service.SectorTypeConstants;
 import com.chat.assistant.chatbot.service.chat.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
 import dev.langchain4j.data.document.Document;
 
@@ -39,7 +39,7 @@ public class IPLDataLoadService implements SectorService {
 	private List<Match> matches = new CopyOnWriteArrayList<>();
 	private List<Venue> venues = new CopyOnWriteArrayList<>();
 	private String dirLocation = "ipl_json";
-	List<Document> documents = new ArrayList<Document>();
+	List<Document> documents = new CopyOnWriteArrayList<Document>();
 
 	public List<Match> getMatches() {
 		return matches;
@@ -60,12 +60,13 @@ public class IPLDataLoadService implements SectorService {
 		try {
 			List<File> files = Files.list(Paths.get(dirLocation))
 					.map(Path::toFile).collect(Collectors.toList());
+			objectMapper.setPropertyNamingStrategy(
+					PropertyNamingStrategy.SNAKE_CASE);
 			for (File file : files) {
 				try {
 					MatchInputJson value = objectMapper.readValue(
 							new File(file.getPath()), MatchInputJson.class);
-					System.out.println(value);
-					documents.add(Document.document(String.valueOf(value)));
+					// System.out.println(value);
 					Match match = new MatchBuilder()
 							.setId(Long.valueOf(
 									file.getName().replace(".json", "")))
@@ -89,6 +90,7 @@ public class IPLDataLoadService implements SectorService {
 							.setOfficials(value.getInfo().getOfficials())
 							.build();
 					getMatches().add(match);
+					documents.add(Document.document(String.valueOf(match)));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -108,11 +110,13 @@ public class IPLDataLoadService implements SectorService {
 
 	public MatchInputJson getMatch(Long key) {
 		try {
+			objectMapper.setPropertyNamingStrategy(
+					PropertyNamingStrategy.SNAKE_CASE);
 			MatchInputJson value = objectMapper.readValue(
 					new File(dirLocation + "/" + key + ".json"),
 					MatchInputJson.class);
 			System.out.println(value);
-			documents.add(Document.from(value.toString()));
+			// documents.add(Document.from(value.toString()));
 			return value;
 		} catch (Exception e) {
 			e.printStackTrace();
