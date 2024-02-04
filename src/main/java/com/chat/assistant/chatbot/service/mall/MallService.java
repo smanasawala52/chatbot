@@ -1,5 +1,6 @@
 package com.chat.assistant.chatbot.service.mall;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import com.chat.assistant.chatbot.repository.mall.MallModelRepository;
 import com.chat.assistant.chatbot.service.SectorService;
 import com.chat.assistant.chatbot.service.SectorTypeConstants;
 import com.chat.assistant.chatbot.service.chat.ChatService;
+
+import dev.langchain4j.data.document.Document;
 
 @Service
 @Component("MallService")
@@ -35,7 +38,14 @@ public class MallService implements SectorService {
 		}
 		String initSystemMessage = "This Chat will Read all Mall Raw Data and "
 				+ "will provide answers to users questions in an interactive session manner.";
-		chatService.initializeChat(initSystemMessage, mallModels.toString(),
+		List<Document> documents = new ArrayList<Document>();
+		for (MallModel mallModel : mallModels) {
+			Document document = Document.document(String.valueOf(mallModel));
+			System.out.println(mallModel);
+			System.out.println(document.text());
+			documents.add(document);
+		}
+		chatService.initializeChat(initSystemMessage, documents,
 				SectorTypeConstants.MALL);
 		return "redirect:/";
 	}

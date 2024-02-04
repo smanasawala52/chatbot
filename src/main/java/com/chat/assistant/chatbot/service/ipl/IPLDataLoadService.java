@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,12 +31,15 @@ import com.chat.assistant.chatbot.service.SectorTypeConstants;
 import com.chat.assistant.chatbot.service.chat.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.langchain4j.data.document.Document;
+
 @Component("IPLService")
 @Service
 public class IPLDataLoadService implements SectorService {
 	private List<Match> matches = new CopyOnWriteArrayList<>();
 	private List<Venue> venues = new CopyOnWriteArrayList<>();
 	private String dirLocation = "ipl_json";
+	List<Document> documents = new ArrayList<Document>();
 
 	public List<Match> getMatches() {
 		return matches;
@@ -60,7 +64,8 @@ public class IPLDataLoadService implements SectorService {
 				try {
 					MatchInputJson value = objectMapper.readValue(
 							new File(file.getPath()), MatchInputJson.class);
-					// System.out.println(value);
+					System.out.println(value);
+					documents.add(Document.document(String.valueOf(value)));
 					Match match = new MatchBuilder()
 							.setId(Long.valueOf(
 									file.getName().replace(".json", "")))
@@ -106,6 +111,8 @@ public class IPLDataLoadService implements SectorService {
 			MatchInputJson value = objectMapper.readValue(
 					new File(dirLocation + "/" + key + ".json"),
 					MatchInputJson.class);
+			System.out.println(value);
+			documents.add(Document.from(value.toString()));
 			return value;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -121,7 +128,7 @@ public class IPLDataLoadService implements SectorService {
 	public String initializeChat() {
 		String initSystemMessage = "This Chat will Read all IPL Matches Raw Data and "
 				+ "will provide answers to users questions in an interactive session manner.";
-		chatService.initializeChat(initSystemMessage, matches.toString(),
+		chatService.initializeChat(initSystemMessage, documents,
 				SectorTypeConstants.IPL);
 		return "redirect:/ipl";
 	}

@@ -1,6 +1,7 @@
 package com.chat.assistant.chatbot.service.chat;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -29,8 +30,8 @@ import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 public class OpenAIChatService implements ChatService {
 	Map<SectorTypeConstants, CustomerSupportAgent> agents = new HashMap<SectorTypeConstants, CustomerSupportAgent>();
 	@Override
-	public void initializeChat(String initSystemMessage, String inputJson,
-			SectorTypeConstants sector) {
+	public void initializeChat(String initSystemMessage,
+			List<Document> documents, SectorTypeConstants sector) {
 		System.out.println("OpenAIChatService: Reached Here");
 		EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
 		int maxResults = 1;
@@ -38,7 +39,11 @@ public class OpenAIChatService implements ChatService {
 		EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
 		// Metadata metadata = new Metadata();
 		// metadata.
-		Document document = Document.from(inputJson);
+		// System.out.println(inputJson);
+		// List<Document> documents = new ArrayList<>();
+		//
+		// Document document = Document.from(inputJson);
+		// documents.add(document);
 		String model = "gpt-3.5-turbo";
 		DocumentSplitter documentSplitter = DocumentSplitters.recursive(100, 0,
 				new OpenAiTokenizer(model));
@@ -46,7 +51,7 @@ public class OpenAIChatService implements ChatService {
 				.documentSplitter(documentSplitter)
 				.embeddingModel(embeddingModel).embeddingStore(embeddingStore)
 				.build();
-		ingestor.ingest(document);
+		ingestor.ingest(documents);
 		EmbeddingStoreContentRetriever contentRetriever = EmbeddingStoreContentRetriever
 				.builder().embeddingStore(embeddingStore)
 				.embeddingModel(embeddingModel).maxResults(maxResults)
