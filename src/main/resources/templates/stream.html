@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Microphone Example</title>
+</head>
+<body>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let myInterval;
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                    //sendAudio();
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                sendAudio();
+            };
+        })
+        .catch(error => {
+            console.error('Error accessing microphone:', error);
+        });
+    
+    function startRecording() {
+        audioChunks = [];
+        mediaRecorder.start();
+        myInterval = setInterval(resetRecording, 1000);
+    }
+    
+    function stopRecording() {
+        mediaRecorder.stop();
+        clearInterval(myInterval);
+    }
+    function resetRecording() {
+        mediaRecorder.stop();
+        audioChunks = [];
+        mediaRecorder.start();
+    }
+
+    async function sendAudio() {
+    	console.log('Reached here sendAudio ' + audioChunks.length);
+        if (audioChunks.length > 0) {
+        	let audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        	//audioChunks = [];
+            let formData = new FormData();
+            formData.append('audioData', audioBlob); // Match the parameter name in your Spring Boot controller
+
+            try {
+                let response = await fetch('/mall/captureAudioStream', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                	let message = await response.text(); // Get the message as text
+                    showMessage(message);
+                	console.log('Audio data sent successfully. ' + message);
+                } else {
+                    console.error('Failed to send audio data. Status:', response.status);
+                }
+            } catch (error) {
+                console.error('Error sending audio data:', error);
+            } finally {
+                audioChunks = [];
+            }
+        }
+    }
+    function showMessage(message) {
+        const messages = document.getElementById('messages');
+        const p = document.createElement('span');
+        //p.style.wordWrap = 'break-word';
+        p.appendChild(document.createTextNode(message));
+        p.appendChild(document.createTextNode('\u00A0'));
+        messages.appendChild(p);
+    }
+</script>
+
+<button onclick="startRecording()">Start Recording</button>
+<button onclick="stopRecording()">Stop Recording</button>
+<div id="messages"></div>
+</body>
+</html>

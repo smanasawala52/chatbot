@@ -1,0 +1,43 @@
+@charset "ISO-8859-1";
+/* ipl-styles.css */
+
+body.ipl-body {
+    background-color: #25274d; /* Dark purple background color */
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #fff; /* White text color */
+}
+
+.ipl-header {
+    background-color: #fecc00; /* Yellow background color for the header */
+    color: #25274d; /* Dark purple text color */
+    text-align: center;
+    padding: 10px;
+}
+
+.ipl-search {
+    background-color: #fff; /* White background color for the search bar */
+    padding: 10px;
+    text-align: center;
+}
+
+.ipl-search input,
+.ipl-search button {
+    margin: 5px;
+    padding: 8px;
+}
+
+.ipl-messages {
+    background-color: #25274d; /* White background color for the messages */
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.ipl-messages p {
+    margin: 0;
+    padding: 5px;
+    border-bottom: 1px solid #ccc; /* Light gray border between messages */
+}
+
+/* Add more styles as needed */

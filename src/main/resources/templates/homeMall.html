@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Vivo Mall</title>
+    <link rel="stylesheet" href="/css/mall-styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+</head>
+<body class="mall-body">
+
+    <header class="mall-header">
+        <h1>Vivo Mall AI Assistant</h1>
+    </header>
+
+    <div class="mall-search">
+        <input type="text" name="query" id="query" tabindex="0" onfocus="document.getElementById('query').value = '';" />
+        <button id="executeQueryButton" tabindex="1">Search</button>
+        <button id="recordButton" tabindex="2">🎤 Record</button>
+        <button id="resetButton" tabindex="3" style="display:none;">Reset Chat</button>
+    </div>
+	<div>
+		Couple of Demo Questions to be asked:
+		<br>Where is tattoo shop located?
+		<br>What are ongoing sales?
+	</div>
+    <div id="audioContainer" style="display:none;"></div>
+    <div id="messages" class="mall-messages"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	let resetButton = document.getElementById('resetButton');
+    let recordButton = document.getElementById('recordButton');
+    let executeQueryButton = document.getElementById('executeQueryButton');
+    let query = document.getElementById('query');
+    query.addEventListener("keydown", function(event) {
+        // Check if the pressed key is the "Enter" key (key code 13)
+        if (event.key === "Enter") {
+            // Call your JavaScript function or perform the desired action
+            executeQuery();
+        }
+    });
+    let audioChunks = [];
+    let mediaRecorder;
+    let stream;
+
+    let isRecording = false;
+
+    recordButton.addEventListener('click', toggleRecording);
+    executeQueryButton.addEventListener('click', executeQuery);
+    resetButton.addEventListener('click', executeResetChat);
+    async function executeResetChat(){
+    	let response = await fetch('/mall/resetChatSession', {
+            method: 'GET'
+        });
+    	resetButton.style = "display:none;";
+    	document.getElementById('messages').html='';
+    }
+    async function executeQuery() {
+    	convertToSpeech('We are currently analysing your question! Please wait a moment.');
+        let formData = new FormData();
+        formData.append('query', query.value); 
+        // Match the parameter name in your Spring Boot controller
+
+    	try {
+            let response = await fetch('/mall/captureQuery', {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+            	let message = await response.text();
+            	showMessage(message);
+            	convertToSpeech(JSON.parse(message).content);
+                console.log('Text data sent successfully. ' + message);
+            } else {
+                console.error('Failed to send text data. Status:', response.status);
+            }
+        } catch (error) {
+            console.error('Error sending text data:', error);
+        } finally {
+        }
+    }
+    async function toggleRecording() {
+        if (!isRecording) {
+            startRecording();
+        } else {
+            stopRecording();
+        }
+        isRecording = !isRecording;
+        updateButtonState();
+    }
+
+    async function startRecording() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+            	sendAudioData();
+                // Do nothing on stop, as we're handling it in sendAudioData
+            };
+
+            mediaRecorder.start();
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    async function sendAudioData() {
+    	convertToSpeech('We are currently analysing your question! Please wait a moment.');
+        let audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        let formData = new FormData();
+        formData.append('audioData', audioBlob); // Match the parameter name in your Spring Boot controller
+
+        try {
+            let response = await fetch('/mall/captureAudioStream', {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+            	let message = await response.text();
+            	showMessage(message);
+            	convertToSpeech(JSON.parse(message).content);
+                console.log('Audio data sent successfully. ' + message);
+            } else {
+                console.error('Failed to send audio data. Status:', response.status);
+            }
+        } catch (error) {
+            console.error('Error sending audio data:', error);
+        } finally {
+            audioChunks = [];
+        }
+    }
+    function convertToSpeech(inputText) {
+        fetch('/convertToSpeech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `inputText=${encodeURIComponent(inputText)}`,
+        })
+        .then(response => response.blob())
+        .then(audioBlob => {
+            // Create an audio element and set the source
+            const audioElement = document.createElement('audio');
+            audioElement.controls = true;
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioElement.src = audioUrl;
+
+            // Update the 'audioContainer' with the audio element
+            const audioContainer = document.getElementById('audioContainer');
+            audioContainer.innerHTML = '';
+            audioContainer.appendChild(audioElement);
+            audioElement.play();
+
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+
+    function showMessage(message) {
+    	resetButton.style = "display:block;";
+        const messages = document.getElementById('messages');
+        const p = document.createElement('p');
+        const hr = document.createElement('hr');
+        const question = document.createElement('p');
+        const answer = document.createElement('p');
+        p.style.wordWrap = 'break-word';
+        question.style.wordWrap = 'break-word';
+        answer.style.wordWrap = 'break-word';
+        try{
+        	question.appendChild(document.createTextNode("Question: "+JSON.parse(message).question+"?"));
+        	p.appendChild(question);
+        }catch(err){
+        	console.log(err);
+        }
+        try{
+        	answer.appendChild(document.createTextNode("Answer: "+JSON.parse(message).content));
+        	p.appendChild(answer);
+        }catch(err){
+        	console.log(err);
+        }
+        p.appendChild(hr);
+        messages.prepend(p);
+    }
+
+    function updateButtonState() {
+        recordButton.textContent = isRecording ? '🛑 Stop Recording' : '🎤 Record';
+    }
+});
+</script>
+</body>
+</html>

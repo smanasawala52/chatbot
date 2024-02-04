@@ -1,0 +1,42 @@
+@charset "ISO-8859-1";
+/* styles.css */
+
+body.mall-body {
+    background-color: #f4f4f4; /* Light gray background color */
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.mall-header {
+    background-color: #333; /* Dark background color for the header */
+    color: #fff; /* White text color */
+    text-align: center;
+    padding: 10px;
+}
+
+.mall-search {
+    background-color: #fff; /* White background color for the search bar */
+    padding: 10px;
+    text-align: center;
+}
+
+.mall-search input,
+.mall-search button {
+    margin: 5px;
+    padding: 8px;
+}
+
+.mall-messages {
+    background-color: #fff; /* White background color for the messages */
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.mall-messages p {
+    margin: 0;
+    padding: 5px;
+    border-bottom: 1px solid #ccc; /* Light gray border between messages */
+}
+
+/* Add more styles as needed */

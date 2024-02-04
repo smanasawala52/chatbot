@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Capture Example</title>
+</head>
+<body>
+
+<h1>Microphone Capture Example</h1>
+
+<button id="recordButton" tabindex="0">🎤 Record</button>
+<button id="startButton">Start Recording</button>
+<button id="stopButton" disabled>Stop Recording</button>
+<div id="messages"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let startButton = document.getElementById('startButton');
+    let stopButton = document.getElementById('stopButton');
+
+    let audioChunks = [];
+
+    let mediaRecorder;
+    let stream;
+
+    startButton.addEventListener('click', startRecording);
+    stopButton.addEventListener('click', stopRecording);
+
+    async function startRecording() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                sendAudioData();
+            };
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            mediaRecorder.start();
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        startButton.disabled = false;
+        stopButton.disabled = true;
+    }
+
+    async function sendAudioData() {
+        let audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        let formData = new FormData();
+        console.log(audioBlob);
+        formData.append('audioData', audioBlob); // Match the parameter name in your Spring Boot controller
+
+        try {
+            let response = await fetch('/mall/captureAudioStream', {
+                method: 'POST',
+                body: formData
+            });
+            console.log(response.url);
+
+            if (response.ok) {
+            	let message = await response.text();
+            	showMessage(message);
+                console.log('Audio data sent successfully. ' + message);
+            } else {
+                console.error('Failed to send audio data. Status:', response.status);
+            }
+        } catch (error) {
+            console.error('Error sending audio data:', error);
+        } finally {
+            audioChunks = [];
+        }
+    }
+    function showMessage(message) {
+        const messages = document.getElementById('messages');
+        const p = document.createElement('span');
+        //p.style.wordWrap = 'break-word';
+        p.appendChild(document.createTextNode(message));
+        p.appendChild(document.createTextNode('\u00A0'));
+        messages.appendChild(p);
+    }
+});
+</script>
+
+</body>
+</html>
