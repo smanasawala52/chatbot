@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.chat.assistant</groupId>
 	<artifactId>chatbot</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.1-SNAPSHOT</version>
 	<name>chatbot</name>
 	<description>Spring Boot project for chat assistant using lang4j</description>
 	<properties>
